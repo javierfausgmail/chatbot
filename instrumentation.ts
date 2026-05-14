@@ -1,5 +1,3 @@
-import { registerOTel } from "@vercel/otel";
-
 export function register() {
-  registerOTel({ serviceName: "chatbot" });
+  // Telemetría desactivada en la versión zero-vendor-lockin.
 }

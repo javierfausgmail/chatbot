@@ -1,7 +1,8 @@
-import { put } from "@vercel/blob";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
 import { auth } from "@/app/(auth)/auth";
 
 const FileSchema = z.object({
@@ -14,6 +15,10 @@ const FileSchema = z.object({
       message: "File type should be JPEG or PNG",
     }),
 });
+
+function sanitizeFilename(filename: string): string {
+  return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -28,7 +33,7 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as Blob;
+    const file = formData.get("file") as Blob | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -44,23 +49,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    const filename = (formData.get("file") as File).name;
-    const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const fileBuffer = await file.arrayBuffer();
+    const originalFile = formData.get("file") as File;
+    const safeName = sanitizeFilename(originalFile.name);
+    const storedName = `${randomUUID()}-${safeName}`;
 
-    try {
-      const data = await put(`${safeName}`, fileBuffer, {
-        access: "public",
-      });
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    await mkdir(uploadsDir, { recursive: true });
 
-      return NextResponse.json(data);
-    } catch (_error) {
-      return NextResponse.json({ error: "Upload failed" }, { status: 500 });
-    }
-  } catch (_error) {
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const filePath = path.join(uploadsDir, storedName);
+
+    await writeFile(filePath, fileBuffer);
+
+    const baseUrl =
+      process.env.UPLOAD_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
+    const pathname = `/uploads/${storedName}`;
+    const url = `${baseUrl}${pathname}`;
+
+    return NextResponse.json({
+      url,
+      pathname,
+      contentType: file.type,
+      size: file.size,
+    });
+  } catch {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
