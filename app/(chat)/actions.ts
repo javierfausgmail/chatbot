@@ -11,6 +11,7 @@ import {
   deleteMessagesByChatIdAfterTimestamp,
   getChatById,
   getMessageById,
+  updateChatTitleById,
   updateChatVisibilityById,
 } from "@/lib/db/queries";
 import { getTextFromMessage } from "@/lib/utils";
@@ -29,9 +30,7 @@ export async function generateTitleFromUserMessage({
     model: getTitleModel(),
     system: titlePrompt,
     prompt: getTextFromMessage(message),
-    providerOptions: {
-      gateway: { order: titleModel.gatewayOrder },
-    },
+    providerOptions: {},
   });
   return text
     .replace(/^[#*"\s]+/, "")
@@ -59,6 +58,26 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
     chatId: message.chatId,
     timestamp: message.createdAt,
   });
+}
+
+export async function updateChatTitle({
+  chatId,
+  title,
+}: {
+  chatId: string;
+  title: string;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== session.user.id) {
+    throw new Error("Unauthorized");
+  }
+
+  await updateChatTitleById({ chatId, title });
 }
 
 export async function updateChatVisibility({

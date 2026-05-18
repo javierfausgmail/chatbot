@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
+import { updateChatTitle } from "@/app/(chat)/actions";
 import useSWRInfinite from "swr/infinite";
 import {
   AlertDialog,
@@ -127,6 +128,38 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     ? paginatedChatHistories.every((page) => page.chats.length === 0)
     : false;
 
+  const handleRename = async (chatId: string) => {
+    const chat = paginatedChatHistories
+      ?.flatMap((page) => page.chats)
+      .find((c) => c.id === chatId);
+
+    const currentTitle = chat?.title ?? "";
+    const newTitle = prompt("Rename chat", currentTitle);
+
+    if (!newTitle || newTitle.trim() === "" || newTitle === currentTitle) {
+      return;
+    }
+
+    try {
+      await updateChatTitle({ chatId, title: newTitle.trim() });
+
+      mutate((chatHistories) => {
+        if (chatHistories) {
+          return chatHistories.map((chatHistory) => ({
+            ...chatHistory,
+            chats: chatHistory.chats.map((c) =>
+              c.id === chatId ? { ...c, title: newTitle.trim() } : c
+            ),
+          }));
+        }
+      });
+
+      toast.success("Chat renamed");
+    } catch {
+      toast.error("Failed to rename chat");
+    }
+  };
+
   const handleDelete = () => {
     const chatToDelete = deleteId;
     const isCurrentChat = pathname === `/chat/${chatToDelete}`;
@@ -242,6 +275,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onRename={handleRename}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -262,6 +296,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onRename={handleRename}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -282,6 +317,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onRename={handleRename}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -302,6 +338,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onRename={handleRename}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -322,6 +359,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onRename={handleRename}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
