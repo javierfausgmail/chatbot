@@ -4,68 +4,180 @@
 </a>
 
 <p align="center">
-    Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful chatbot applications.
+  Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK.
+  This version removes Vercel vendor lock-in: uses an OpenAI-compatible provider instead of AI Gateway,
+  local file storage instead of Vercel Blob, and can run fully offline.
 </p>
 
-<p align="center">
-  <a href="https://chatbot.ai-sdk.dev/docs"><strong>Read Docs</strong></a> ·
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#model-providers"><strong>Model Providers</strong></a> ·
-  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
-</p>
-<br/>
+<br />
 
-## Features
+## Requirements
 
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://ai-sdk.dev/docs/introduction)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports OpenAI, Anthropic, Google, xAI, and other model providers via AI Gateway
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [Auth.js](https://authjs.dev)
-  - Simple and secure authentication
+- **Node.js** >= 18
+- **pnpm** >= 9 (`npm i -g pnpm`)
+- **PostgreSQL** 16 (via `docker-compose.local.yml` or your own instance)
+- **Redis** 7 (opcional, para streams reanudables)
+- Opcional: **LM Studio**, **Ollama**, **NVIDIA NIM**, o cualquier proveedor OpenAI-compatible
 
-## Model Providers
+## Configuración inicial
 
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. Models are configured in `lib/ai/models.ts` with per-model provider routing. Included models: Mistral, Moonshot, DeepSeek, OpenAI, and xAI.
-
-### AI Gateway Authentication
-
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
-
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
-
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
-
-## Deploy Your Own
-
-You can deploy your own version of Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/chatbot)
-
-## Running locally
-
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
-
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
+### 1. Clonar e instalar dependencias
 
 ```bash
+git clone <repo-url>
+cd chatbot
 pnpm install
-pnpm db:migrate # Setup database or apply latest database changes
+```
+
+### 2. Servicios con Docker (recomendado)
+
+```bash
+docker compose -f docker-compose.local.yml up -d
+```
+
+Esto levanta:
+- **PostgreSQL 16** en puerto `5433`
+- **Redis 7** en puerto `6379`
+- **MinIO** (S3-compatible) en puerto `9000` (API) y `9001` (console)
+
+### 3. Variables de entorno
+
+Copia `.env.example` a `.env.local` y ajústalo:
+
+```bash
+cp .env.example .env.local
+```
+
+Ejemplo completo:
+
+```env
+# Autenticación — genera un secreto con: openssl rand -base64 32
+AUTH_SECRET=your-secret-here
+
+# Base de datos PostgreSQL
+POSTGRES_URL=postgres://chatbot:chatbot@localhost:5433/chatbot
+
+# Redis (opcional, para streams reanudables)
+REDIS_URL=redis://localhost:6379
+
+# Proveedor OpenAI-compatible
+# Para LM Studio local:
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+OPENAI_COMPATIBLE_API_KEY=not-needed
+OPENAI_COMPATIBLE_PROVIDER_NAME=lmstudio
+
+# Para NVIDIA NIM / NVIDIA Integrate:
+# OPENAI_COMPATIBLE_BASE_URL=https://integrate.api.nvidia.com/v1
+# OPENAI_COMPATIBLE_API_KEY=su-api-key
+# OPENAI_COMPATIBLE_PROVIDER_NAME=nvidia
+
+# ID del modelo que usará el proveedor
+CHAT_MODEL_ID=escriba-aqui-el-modelo-real
+TITLE_MODEL_ID=escriba-aqui-el-modelo-real
+
+# Base URL pública para subida de archivos
+UPLOAD_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+> **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
+
+### 4. Migrar la base de datos
+
+```bash
+pnpm db:migrate
+```
+
+### 5. Ejecutar en desarrollo
+
+```bash
 pnpm dev
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+La aplicación estará disponible en [http://localhost:3000](http://localhost:3000).
+
+## Scripts disponibles
+
+| Comando | Descripción |
+|---|---|
+| `pnpm dev` | Inicia servidor de desarrollo con Turbopack |
+| `pnpm build` | Ejecuta migraciones y construye para producción |
+| `pnpm start` | Inicia servidor de producción |
+| `pnpm check` | Analiza el código con Ultracite (lint + formato) |
+| `pnpm fix` | Corrige automáticamente errores de lint y formato |
+| `pnpm test` | Ejecuta tests E2E con Playwright |
+| `pnpm db:migrate` | Ejecuta migraciones pendientes de Drizzle |
+| `pnpm db:generate` | Genera nuevas migraciones tras cambiar esquemas |
+| `pnpm db:studio` | Abre Drizzle Studio para explorar la BD |
+| `pnpm db:push` | Pushea el esquema directamente a la BD |
+| `pnpm db:pull` | Extrae el esquema desde la BD existente |
+
+## Debugging (VS Code)
+
+Crea `.vscode/launch.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: Debug dev",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm dev",
+      "serverReadyAction": {
+        "pattern": "Local:.+(https?://[^:]+(:\\d+)?)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Next.js: Debug server-side",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
+```
+
+Para debugging server-side, inicia con `NODE_OPTIONS='--inspect' pnpm dev`.
+
+## Linting y formato
+
+Usamos [Ultracite](https://ultracite.dev) (que a su vez usa Biome) para linting y formato:
+
+```bash
+pnpm check    # Verifica errores
+pnpm fix      # Corrige automáticamente
+```
+
+La configuración está en `biome.jsonc`. También puedes integrarlo en tu editor con la extensión de Biome.
+
+## Arquitectura
+
+```
+app/
+  (auth)/        → Autenticación (Auth.js)
+  (chat)/        → Chat, API routes, server actions
+    api/
+      chat/      → POST (mensaje), DELETE (eliminar chat)
+      files/     → Subida de archivos a public/uploads
+      history/   → Historial paginado de chats
+      vote/      → Votación de mensajes
+components/
+  chat/          → Componentes UI del chat
+lib/
+  ai/            → Proveedores, modelos, prompts y tools
+  db/            → Drizzle ORM, esquemas y queries
+```
+
+## Despliegue
+
+El proyecto genera una build autocontenida con `output: "standalone"`:
+
+```bash
+pnpm build
+```
+
+La carpeta `.next/standalone` contiene todo lo necesario para desplegar en cualquier servidor Node.js sin depender de Vercel.
