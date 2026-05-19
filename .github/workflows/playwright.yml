@@ -9,12 +9,39 @@ jobs:
   test:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: chatbot
+          POSTGRES_USER: chatbot
+          POSTGRES_PASSWORD: chatbot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
-      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-      BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
-      POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      REDIS_URL: ${{ secrets.REDIS_URL }}
+      AUTH_SECRET: test-auth-secret
+      POSTGRES_URL: postgres://chatbot:chatbot@localhost:5432/chatbot
+      REDIS_URL: redis://localhost:6379
+      OPENAI_COMPATIBLE_BASE_URL: http://localhost:1234/v1
+      OPENAI_COMPATIBLE_API_KEY: not-needed
+      OPENAI_COMPATIBLE_PROVIDER_NAME: test
+      CHAT_MODEL_ID: chat-model
+      TITLE_MODEL_ID: title-model
+      UPLOAD_PUBLIC_BASE_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +50,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 20
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.32.1
           run_install: false
 
       - name: Get pnpm store directory
@@ -46,7 +73,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 20
           cache: "pnpm"
 
       - name: Install dependencies

@@ -5,16 +5,33 @@
 
 <p align="center">
   Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK.
-  This version removes Vercel vendor lock-in: uses an OpenAI-compatible provider instead of AI Gateway,
-  local file storage instead of Vercel Blob, and can run fully offline.
+  Version 3.1.1 is a stable zero-vendor-lockin base: OpenAI-compatible provider instead of AI Gateway,
+  local file storage instead of Vercel Blob, and standalone deployment without Vercel-specific runtime services.
 </p>
 
 <br />
 
+## Stable Release
+
+**Current stable version: `3.1.1`**
+
+This release is intended as a clean base for future developments. It includes:
+
+- Persistent chat with PostgreSQL.
+- Auth.js authentication with guest access.
+- Configurable OpenAI-compatible model provider.
+- Local upload storage under `public/uploads`.
+- Optional Redis support for resumable streams.
+- Sidebar action to rename chats.
+- Standalone Next.js output for self-hosted deployments.
+- No runtime dependency on Vercel AI Gateway, Vercel Blob, BotID, Vercel Functions, or Vercel OTel.
+
+Downloads for this stable base are available from the GitHub release tag `v3.1.1`.
+
 ## Requirements
 
-- **Node.js** >= 18
-- **pnpm** >= 9 (`npm i -g pnpm`)
+- **Node.js** >= 20
+- **pnpm** 10.32.1 (`corepack enable` recommended)
 - **PostgreSQL** 16 (via `docker-compose.local.yml` or your own instance)
 - **Redis** 7 (opcional, para streams reanudables)
 - Opcional: **LM Studio**, **Ollama**, **NVIDIA NIM**, o cualquier proveedor OpenAI-compatible
@@ -26,6 +43,7 @@
 ```bash
 git clone <repo-url>
 cd chatbot
+corepack enable
 pnpm install
 ```
 
@@ -181,3 +199,13 @@ pnpm build
 ```
 
 La carpeta `.next/standalone` contiene todo lo necesario para desplegar en cualquier servidor Node.js sin depender de Vercel.
+
+## Versionado
+
+El proyecto usa tags Git para marcar versiones estables. La versión actual está definida en `package.json` y documentada en `CHANGELOG.md`.
+
+Para recuperar esta base estable en el futuro:
+
+```bash
+git checkout v3.1.1
+```
