@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
+    "dev:debug": "cross-env NODE_OPTIONS=--inspect next dev --turbo",
     "build": "tsx lib/db/migrate && next build",
     "start": "next start",
     "check": "ultracite check",
@@ -15,7 +16,16 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "cross-env PLAYWRIGHT=True pnpm exec playwright test",
+    "test:ui": "cross-env PLAYWRIGHT=True pnpm exec playwright test --ui",
+    "test:debug": "cross-env PLAYWRIGHT=True PWDEBUG=1 pnpm exec playwright test",
+    "docker:up": "docker compose -f docker-compose.local.yml up -d",
+    "docker:down": "docker compose -f docker-compose.local.yml down",
+    "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
+    "docker:logs:blender": "docker logs -f chatbot-blender-worker",
+    "worker:build": "docker compose -f docker-compose.local.yml build blender-worker",
+    "worker:restart": "docker compose -f docker-compose.local.yml up -d --force-recreate blender-worker",
+    "debug:3d:smoke": "tsx scripts/debug-3d-smoke.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.47",
@@ -92,6 +102,7 @@
     "@types/react-dom": "^18",
     "@types/three": "^0.184.1",
     "babel-plugin-react-compiler": "^1.0.0",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.25.0",
     "postcss": "^8",
     "tailwindcss": "^4.1.13",

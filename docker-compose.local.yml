@@ -40,8 +40,11 @@ services:
     restart: unless-stopped
     environment:
       OUTPUT_ROOT: /outputs
+      DEBUGPY: ${BLENDER_DEBUGPY:-0}
+      DEBUGPY_WAIT: ${BLENDER_DEBUGPY_WAIT:-0}
     ports:
       - "8010:8010"
+      - "5678:5678"
     volumes:
       - ./public/generated-3d:/outputs
 

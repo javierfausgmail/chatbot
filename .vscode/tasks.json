@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker: up local stack",
+      "type": "shell",
+      "command": "pnpm docker:up",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: down local stack",
+      "type": "shell",
+      "command": "pnpm docker:down",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: build blender-worker",
+      "type": "shell",
+      "command": "pnpm worker:build",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: restart blender-worker",
+      "type": "shell",
+      "command": "pnpm worker:restart",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: logs blender-worker",
+      "type": "shell",
+      "command": "pnpm docker:logs:blender",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "db: migrate",
+      "type": "shell",
+      "command": "pnpm db:migrate",
+      "problemMatcher": []
+    },
+    {
+      "label": "db: studio",
+      "type": "shell",
+      "command": "pnpm db:studio",
+      "problemMatcher": []
+    },
+    {
+      "label": "next: dev debug",
+      "type": "shell",
+      "command": "pnpm dev:debug",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "playwright: ui",
+      "type": "shell",
+      "command": "pnpm test:ui",
+      "problemMatcher": []
+    },
+    {
+      "label": "3d: smoke worker job",
+      "type": "shell",
+      "command": "pnpm debug:3d:smoke",
+      "problemMatcher": []
+    }
+  ]
+}

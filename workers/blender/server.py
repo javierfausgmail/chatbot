@@ -9,12 +9,36 @@ JOBS = {}
 OUTPUT_ROOT = Path(os.environ.get("OUTPUT_ROOT", "/outputs"))
 
 
+def debug_enabled(name):
+    return os.environ.get(name, "0").lower() in {"1", "true", "yes", "on"}
+
+
+def log(message):
+    print(f"[blender-worker] {message}", flush=True)
+
+
+def setup_debugpy():
+    if not debug_enabled("DEBUGPY"):
+        return
+
+    import debugpy
+
+    debugpy.listen(("0.0.0.0", 5678))
+    log("debugpy listening on 0.0.0.0:5678")
+
+    if debug_enabled("DEBUGPY_WAIT"):
+        log("waiting for debugger attach")
+        debugpy.wait_for_client()
+        log("debugger attached")
+
+
 def run_job(job_id, scene, output_dir):
     JOBS[job_id]["status"] = "running"
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     scene_file = target / "scene.json"
     scene_file.write_text(json.dumps(scene, indent=2), encoding="utf-8")
+    log(f"job {job_id} running; output={target}")
 
     try:
         subprocess.run(
@@ -46,8 +70,10 @@ def run_job(job_id, scene, output_dir):
         if missing:
             raise RuntimeError(f"Missing generated files: {', '.join(missing)}")
         JOBS[job_id].update({"status": "completed", "files": files, "error": None})
+        log(f"job {job_id} completed; files={', '.join(file['filename'] for file in files)}")
     except Exception as exc:
         JOBS[job_id].update({"status": "failed", "error": str(exc), "files": []})
+        log(f"job {job_id} failed; error={exc}")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -78,6 +104,7 @@ class Handler(BaseHTTPRequestHandler):
         job_id = payload["jobId"]
         output_dir = payload.get("outputDir") or str(OUTPUT_ROOT / job_id)
         JOBS[job_id] = {"jobId": job_id, "status": "queued", "files": [], "error": None}
+        log(f"job {job_id} queued")
         thread = threading.Thread(
             target=run_job,
             args=(job_id, payload["scene"], output_dir),
@@ -91,5 +118,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    setup_debugpy()
     server = ThreadingHTTPServer(("0.0.0.0", 8010), Handler)
+    log("listening on 0.0.0.0:8010")
     server.serve_forever()

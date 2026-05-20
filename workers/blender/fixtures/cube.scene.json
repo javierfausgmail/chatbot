@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "units": "mm",
+  "metadata": {
+    "title": "Debug Cube",
+    "printable": true,
+    "description": "Simple cube fixture for Blender worker smoke tests."
+  },
+  "objects": [
+    {
+      "id": "cube_body",
+      "type": "box",
+      "size": [30, 30, 30],
+      "position": [0, 0, 15],
+      "rotation": [0, 0, 0],
+      "fillet": 1
+    }
+  ],
+  "operations": [],
+  "exports": ["glb", "blend", "stl"]
+}

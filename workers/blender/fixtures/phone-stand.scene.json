@@ -1,0 +1,49 @@
+{
+  "version": "1",
+  "units": "mm",
+  "metadata": {
+    "title": "Debug Phone Stand",
+    "printable": true,
+    "description": "Phone stand fixture with base, rear support, lip, and cable cutout."
+  },
+  "objects": [
+    {
+      "id": "base",
+      "type": "box",
+      "size": [90, 70, 8],
+      "position": [0, 0, 4],
+      "fillet": 2
+    },
+    {
+      "id": "back_support",
+      "type": "box",
+      "size": [90, 8, 85],
+      "position": [0, 24, 45],
+      "rotation": [-14, 0, 0],
+      "fillet": 2
+    },
+    {
+      "id": "front_lip",
+      "type": "box",
+      "size": [90, 10, 14],
+      "position": [0, -29, 11],
+      "fillet": 1.5
+    },
+    {
+      "id": "cable_cutout",
+      "type": "cylinder",
+      "radius": 8,
+      "depth": 16,
+      "position": [0, -29, 12],
+      "rotation": [90, 0, 0]
+    }
+  ],
+  "operations": [
+    {
+      "type": "difference",
+      "target": "front_lip",
+      "objects": ["front_lip", "cable_cutout"]
+    }
+  ],
+  "exports": ["glb", "blend", "stl"]
+}

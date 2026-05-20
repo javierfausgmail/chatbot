@@ -99,11 +99,13 @@ def create_object(spec):
 def boolean_difference(target, cutters):
     bpy.context.view_layer.objects.active = target
     for cutter in cutters:
+        cutter_name = cutter.name
         modifier = target.modifiers.new(f"subtract_{cutter.name}", "BOOLEAN")
         modifier.operation = "DIFFERENCE"
         modifier.object = cutter
         bpy.ops.object.modifier_apply(modifier=modifier.name)
         bpy.data.objects.remove(cutter, do_unlink=True)
+        yield cutter_name
 
 
 def main(scene_file, output_dir):
@@ -123,9 +125,8 @@ def main(scene_file, output_dir):
             target_id = operation.get("target") or operation["objects"][0]
             target = objects[target_id]
             cutters = [objects[obj_id] for obj_id in operation["objects"] if obj_id != target_id and obj_id in objects]
-            boolean_difference(target, cutters)
-            for cutter in cutters:
-                objects.pop(cutter.name, None)
+            for cutter_name in boolean_difference(target, cutters):
+                objects.pop(cutter_name, None)
 
     for obj in objects.values():
         obj.select_set(True)
