@@ -4,9 +4,19 @@ import { useEffect } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
+import type { ArtifactKind } from "./artifact";
 import { artifactDefinitions } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
+
+const artifactKindByDeltaType: Partial<Record<string, ArtifactKind>> = {
+  "data-codeDelta": "code",
+  "data-imageDelta": "image",
+  "data-model3dDelta": "model3d",
+  "data-sheetDelta": "sheet",
+  "data-textDelta": "text",
+  "data-suggestion": "text",
+};
 
 export function DataStreamHandler() {
   const { dataStream, setDataStream } = useDataStream();
@@ -27,9 +37,10 @@ export function DataStreamHandler() {
         mutate(unstable_serialize(getChatHistoryPaginationKey));
         continue;
       }
+      const artifactKind = artifactKindByDeltaType[delta.type] ?? artifact.kind;
       const artifactDefinition = artifactDefinitions.find(
         (currentArtifactDefinition) =>
-          currentArtifactDefinition.kind === artifact.kind
+          currentArtifactDefinition.kind === artifactKind
       );
 
       if (artifactDefinition?.onStreamPart) {

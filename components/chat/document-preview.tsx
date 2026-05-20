@@ -253,6 +253,10 @@ const DocumentHeader = memo(PureDocumentHeader, (prevProps, nextProps) => {
 
 const DocumentContent = ({ document }: { document: Document }) => {
   const { artifact } = useArtifact();
+  const parsedModel =
+    document.kind === "model3d" && document.content
+      ? parseModel3DPreview(document.content)
+      : null;
 
   const containerClassName = cn(
     "h-[257px] overflow-hidden rounded-b-2xl border border-t-0 border-border/50 dark:bg-muted",
@@ -298,6 +302,32 @@ const DocumentContent = ({ document }: { document: Document }) => {
           status={artifact.status}
           title={document.title}
         />
+      ) : document.kind === "model3d" ? (
+        <div className="flex size-full flex-col justify-between bg-gradient-to-br from-slate-50 to-slate-100 p-5 dark:from-slate-950 dark:to-slate-900">
+          <div>
+            <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+              Printable 3D model
+            </div>
+            <div className="mt-2 font-semibold text-lg leading-tight">
+              {document.title}
+            </div>
+            <div className="mt-2 text-muted-foreground text-sm">
+              {parsedModel?.status
+                ? `Status: ${parsedModel.status}`
+                : "Ready to open in the 3D artifact viewer"}
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+            {["GLB", "BLEND", "STL", "SCENE"].map((format) => (
+              <div
+                className="rounded-md border bg-background/70 px-2 py-1"
+                key={format}
+              >
+                {format}
+              </div>
+            ))}
+          </div>
+        </div>
       ) : null}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-muted to-transparent dark:from-muted" />
       {document.kind === "code" && (
@@ -306,3 +336,11 @@ const DocumentContent = ({ document }: { document: Document }) => {
     </div>
   );
 };
+
+function parseModel3DPreview(content: string) {
+  try {
+    return JSON.parse(content) as { status?: string };
+  } catch {
+    return null;
+  }
+}

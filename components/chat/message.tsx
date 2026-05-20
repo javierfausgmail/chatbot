@@ -241,6 +241,33 @@ const PurePreviewMessage = ({
       );
     }
 
+    if (type === "tool-create3DModel") {
+      const { toolCallId } = part;
+
+      if (part.output && "error" in part.output) {
+        return (
+          <div
+            className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
+            key={toolCallId}
+          >
+            Error creating 3D model: {String(part.output.error)}
+          </div>
+        );
+      }
+
+      return (
+        <DocumentPreview
+          isReadonly={isReadonly}
+          key={toolCallId}
+          result={
+            part.output
+              ? { ...part.output, kind: "model3d" as const }
+              : undefined
+          }
+        />
+      );
+    }
+
     if (type === "tool-updateDocument") {
       const { toolCallId } = part;
 

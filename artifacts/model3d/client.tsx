@@ -15,6 +15,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Artifact } from "@/components/chat/create-artifact";
 import { DownloadIcon, MessageIcon } from "@/components/chat/icons";
+import { useArtifact } from "@/hooks/use-artifact";
 import type { Generated3DFile, Model3DArtifactContent } from "@/lib/3d/types";
 
 function parseModel3DContent(content: string): Model3DArtifactContent | null {
@@ -133,6 +134,7 @@ export const model3DArtifact = new Artifact<"model3d">({
     }
   },
   content: ({ content }) => {
+    const { setArtifact } = useArtifact();
     const model = parseModel3DContent(content);
     const glb = model?.files.find((file) => file.format === "glb");
     const printable = model?.files.find((file) => file.format === "stl");
@@ -158,13 +160,24 @@ export const model3DArtifact = new Artifact<"model3d">({
           return;
         }
         const updated = (await response.json()) as Model3DArtifactContent;
-        if (updated.status === "completed" || updated.status === "failed") {
-          window.location.reload();
-        }
+        setArtifact((currentArtifact) => {
+          if (currentArtifact.documentId !== updated.jobId) {
+            return currentArtifact;
+          }
+
+          return {
+            ...currentArtifact,
+            content: JSON.stringify(updated),
+            status:
+              updated.status === "completed" || updated.status === "failed"
+                ? "idle"
+                : currentArtifact.status,
+          };
+        });
       }, 3000);
 
       return () => clearInterval(interval);
-    }, [model?.jobId, shouldPoll]);
+    }, [model?.jobId, setArtifact, shouldPoll]);
 
     if (!model) {
       return (
