@@ -74,6 +74,7 @@
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.184.0",
     "use-stick-to-bottom": "^1.1.1",
     "usehooks-ts": "^3.1.0",
     "zod": "^3.25.76"
@@ -89,6 +90,7 @@
     "@types/pdf-parse": "^1.1.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.184.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.25.0",
     "postcss": "^8",

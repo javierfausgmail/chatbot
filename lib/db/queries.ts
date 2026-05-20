@@ -23,7 +23,11 @@ import {
   chat,
   type DBMessage,
   document,
+  type Model3DFile,
+  type Model3DJob,
   message,
+  model3DFile,
+  model3DJob,
   type Suggestion,
   stream,
   suggestion,
@@ -100,6 +104,18 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
+    const modelJobs = await db
+      .select({ id: model3DJob.id })
+      .from(model3DJob)
+      .where(eq(model3DJob.chatId, id));
+    const modelJobIds = modelJobs.map((job) => job.id);
+
+    if (modelJobIds.length > 0) {
+      await db
+        .delete(model3DFile)
+        .where(inArray(model3DFile.jobId, modelJobIds));
+    }
+    await db.delete(model3DJob).where(eq(model3DJob.chatId, id));
     await db.delete(vote).where(eq(vote.chatId, id));
     await db.delete(message).where(eq(message.chatId, id));
     await db.delete(stream).where(eq(stream.chatId, id));
@@ -129,6 +145,18 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
     }
 
     const chatIds = userChats.map((c) => c.id);
+    const modelJobs = await db
+      .select({ id: model3DJob.id })
+      .from(model3DJob)
+      .where(inArray(model3DJob.chatId, chatIds));
+    const modelJobIds = modelJobs.map((job) => job.id);
+
+    if (modelJobIds.length > 0) {
+      await db
+        .delete(model3DFile)
+        .where(inArray(model3DFile.jobId, modelJobIds));
+    }
+    await db.delete(model3DJob).where(inArray(model3DJob.chatId, chatIds));
 
     await db.delete(vote).where(inArray(vote.chatId, chatIds));
     await db.delete(message).where(inArray(message.chatId, chatIds));
@@ -412,6 +440,153 @@ export async function getDocumentById({ id }: { id: string }) {
     throw new ChatbotError(
       "bad_request:database",
       "Failed to get document by id"
+    );
+  }
+}
+
+export async function createModel3DJob({
+  id,
+  chatId,
+  userId,
+  documentId,
+  title,
+  prompt,
+  provider,
+  sceneJson,
+  sourceJobId,
+}: {
+  id: string;
+  chatId: string;
+  userId: string;
+  documentId: string;
+  title: string;
+  prompt: string;
+  provider: string;
+  sceneJson: unknown;
+  sourceJobId?: string;
+}) {
+  try {
+    const [job] = await db
+      .insert(model3DJob)
+      .values({
+        id,
+        chatId,
+        userId,
+        documentId,
+        title,
+        prompt,
+        provider,
+        sceneJson,
+        sourceJobId,
+      })
+      .returning();
+
+    return job;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create 3D model job"
+    );
+  }
+}
+
+export async function getModel3DJobById({ id }: { id: string }) {
+  try {
+    const [job] = await db
+      .select()
+      .from(model3DJob)
+      .where(eq(model3DJob.id, id));
+
+    return job ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get 3D model job by id"
+    );
+  }
+}
+
+export async function getModel3DFilesByJobId({ jobId }: { jobId: string }) {
+  try {
+    return await db
+      .select()
+      .from(model3DFile)
+      .where(eq(model3DFile.jobId, jobId))
+      .orderBy(asc(model3DFile.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get 3D model files by job id"
+    );
+  }
+}
+
+export async function updateModel3DJobStatus({
+  id,
+  status,
+  error,
+}: {
+  id: string;
+  status: Model3DJob["status"];
+  error?: string | null;
+}) {
+  try {
+    const [job] = await db
+      .update(model3DJob)
+      .set({
+        status,
+        error,
+        updatedAt: new Date(),
+        completedAt:
+          status === "completed" || status === "failed" ? new Date() : null,
+      })
+      .where(eq(model3DJob.id, id))
+      .returning();
+
+    return job;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update 3D model job status"
+    );
+  }
+}
+
+export async function replaceModel3DFiles({
+  jobId,
+  files,
+}: {
+  jobId: string;
+  files: Array<{
+    format: Model3DFile["format"];
+    pathname: string;
+    url: string;
+    size?: number;
+  }>;
+}) {
+  try {
+    await db.delete(model3DFile).where(eq(model3DFile.jobId, jobId));
+
+    if (files.length === 0) {
+      return [];
+    }
+
+    return await db
+      .insert(model3DFile)
+      .values(
+        files.map((file) => ({
+          jobId,
+          format: file.format,
+          pathname: file.pathname,
+          url: file.url,
+          size: file.size ?? null,
+        }))
+      )
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to replace 3D model files"
     );
   }
 }

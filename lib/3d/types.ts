@@ -1,0 +1,82 @@
+import { z } from "zod";
+
+export const model3DFormats = ["glb", "blend", "stl", "scene"] as const;
+export type Model3DFormat = (typeof model3DFormats)[number];
+
+export const primitive3DObjectSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.enum(["box", "cylinder", "sphere", "wedge", "text"]),
+  size: z
+    .tuple([
+      z.number().positive(),
+      z.number().positive(),
+      z.number().positive(),
+    ])
+    .optional(),
+  radius: z.number().positive().optional(),
+  depth: z.number().positive().optional(),
+  text: z.string().min(1).max(80).optional(),
+  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  fillet: z.number().min(0).max(20).optional(),
+  material: z.string().max(64).optional(),
+});
+
+export const model3DOperationSchema = z.object({
+  type: z.enum(["union", "difference"]),
+  objects: z.array(z.string().min(1)).min(1),
+  target: z.string().min(1).optional(),
+});
+
+export const printable3DSceneSchema = z.object({
+  version: z.literal("1"),
+  units: z.literal("mm"),
+  metadata: z.object({
+    title: z.string().min(1).max(120),
+    printable: z.literal(true),
+    description: z.string().max(500).optional(),
+  }),
+  objects: z.array(primitive3DObjectSchema).min(1).max(40),
+  operations: z.array(model3DOperationSchema).max(40).default([]),
+  exports: z
+    .array(z.enum(["glb", "blend", "stl"]))
+    .default(["glb", "blend", "stl"]),
+});
+
+export type Printable3DScene = z.infer<typeof printable3DSceneSchema>;
+
+export type Generated3DFile = {
+  format: Model3DFormat;
+  pathname: string;
+  url: string;
+  size?: number;
+};
+
+export type Model3DArtifactContent = {
+  jobId: string;
+  status: "queued" | "running" | "completed" | "failed";
+  provider: string;
+  title: string;
+  prompt: string;
+  units: "mm";
+  printable: true;
+  files: Generated3DFile[];
+  scene: Printable3DScene;
+  error?: string | null;
+};
+
+export type CreateModel3DJobInput = {
+  chatId: string;
+  userId: string;
+  documentId: string;
+  title: string;
+  prompt: string;
+  scene: Printable3DScene;
+  sourceJobId?: string;
+};
+
+export type Model3DProvider = {
+  id: string;
+  createJob(input: CreateModel3DJobInput): Promise<Model3DArtifactContent>;
+  syncJob(jobId: string): Promise<Model3DArtifactContent | null>;
+};

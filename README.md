@@ -34,6 +34,7 @@ Downloads for this stable base are available from the GitHub release tag `v3.1.1
 - **pnpm** 10.32.1 (`corepack enable` recommended)
 - **PostgreSQL** 16 (via `docker-compose.local.yml` or your own instance)
 - **Redis** 7 (opcional, para streams reanudables)
+- **Blender Worker** en Docker para generación 3D headless
 - Opcional: **LM Studio**, **Ollama**, **NVIDIA NIM**, o cualquier proveedor OpenAI-compatible
 
 ## Configuración inicial
@@ -57,6 +58,7 @@ Esto levanta:
 - **PostgreSQL 16** en puerto `5433`
 - **Redis 7** en puerto `6379`
 - **MinIO** (S3-compatible) en puerto `9000` (API) y `9001` (console)
+- **Blender Worker** en puerto `8010` para generación de modelos 3D imprimibles
 
 ### 3. Variables de entorno
 
@@ -95,7 +97,24 @@ TITLE_MODEL_ID=escriba-aqui-el-modelo-real
 
 # Base URL pública para subida de archivos
 UPLOAD_PUBLIC_BASE_URL=http://localhost:3000
+
+# Worker Blender headless para modelos 3D
+BLENDER_WORKER_URL=http://localhost:8010
+BLENDER_WORKER_OUTPUT_ROOT=/outputs
 ```
+
+## Generación 3D
+
+La integración 3D inicial está diseñada para piezas imprimibles en milímetros reales. El chat puede invocar la tool `create3DModel`, que crea un artifact `model3d` con:
+
+- Visor 3D interactivo a partir de `.glb`.
+- Descarga del archivo Blender original `.blend`.
+- Descarga para impresión 3D `.stl`.
+- Descarga/visualización de la receta reproducible `scene.json`.
+
+El motor inicial es Blender en modo headless dentro del servicio `blender-worker`. La arquitectura usa un provider modular para poder añadir OpenSCAD, FreeCAD u otros motores en futuras versiones.
+
+El pipeline usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
 
 > **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
 

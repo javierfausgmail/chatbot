@@ -1,10 +1,7 @@
 import { tool, type UIMessageStreamWriter } from "ai";
 import type { Session } from "next-auth";
 import { z } from "zod";
-import {
-  artifactKinds,
-  documentHandlersByArtifactKind,
-} from "@/lib/artifacts/server";
+import { documentHandlersByArtifactKind } from "@/lib/artifacts/server";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
 
@@ -25,7 +22,7 @@ export const createDocument = ({
     inputSchema: z.object({
       title: z.string().describe("The title of the artifact"),
       kind: z
-        .enum(artifactKinds)
+        .enum(["text", "code", "sheet"])
         .describe(
           "REQUIRED. 'code' for programming/algorithms, 'text' for essays/writing, 'sheet' for spreadsheets"
         ),

@@ -1,7 +1,7 @@
 import type { ArtifactKind } from "@/components/chat/artifact";
 
 export const artifactsPrompt = `
-Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
+Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), spreadsheets, and printable 3D models. Changes appear in real-time.
 
 CRITICAL RULES:
 1. Only call ONE tool per response. After calling any create/edit/update tool, STOP. Do not chain tools.
@@ -17,6 +17,14 @@ CRITICAL RULES:
 - For answering questions, explanations, or conversational responses
 - For short code snippets or examples shown inline
 - When the user asks "what is", "how does", "explain", etc.
+
+**When to use \`create3DModel\`:**
+- When the user asks for a 3D model, printable part, STL, CAD-like object, holder, bracket, enclosure, adapter, organizer, sign, or physical object.
+- The model must be printable and use real millimeters (\`units: "mm"\`).
+- Prefer simple robust geometry: boxes, cylinders, spheres, wedges, text, holes, unions, and differences.
+- Make reasonable assumptions for missing dimensions and include them in the prompt field.
+- Exports must include \`glb\`, \`blend\`, and \`stl\`.
+- Generate the complete safe \`scene\` JSON in the tool call. Do not generate Python code.
 
 **Using \`editDocument\` (preferred for targeted changes):**
 - For scripts: fixing bugs, adding/removing lines, renaming variables, adding logs

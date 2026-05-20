@@ -77,7 +77,9 @@ export const document = pgTable(
     createdAt: timestamp("createdAt").notNull(),
     title: text("title").notNull(),
     content: text("content"),
-    kind: varchar("text", { enum: ["text", "code", "image", "sheet"] })
+    kind: varchar("text", {
+      enum: ["text", "code", "image", "sheet", "model3d"],
+    })
       .notNull()
       .default("text"),
     userId: uuid("userId")
@@ -90,6 +92,51 @@ export const document = pgTable(
 );
 
 export type Document = InferSelectModel<typeof document>;
+
+export const model3DJob = pgTable("Model3DJob", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  documentId: uuid("documentId").notNull(),
+  title: text("title").notNull(),
+  prompt: text("prompt").notNull(),
+  provider: varchar("provider").notNull(),
+  status: varchar("status", {
+    enum: ["queued", "running", "completed", "failed"],
+  })
+    .notNull()
+    .default("queued"),
+  units: varchar("units").notNull().default("mm"),
+  printable: boolean("printable").notNull().default(true),
+  sourceJobId: uuid("sourceJobId"),
+  sceneJson: json("sceneJson").notNull(),
+  error: text("error"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type Model3DJob = InferSelectModel<typeof model3DJob>;
+
+export const model3DFile = pgTable("Model3DFile", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  jobId: uuid("jobId")
+    .notNull()
+    .references(() => model3DJob.id),
+  format: varchar("format", {
+    enum: ["glb", "blend", "stl", "scene"],
+  }).notNull(),
+  pathname: text("pathname").notNull(),
+  url: text("url").notNull(),
+  size: json("size"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type Model3DFile = InferSelectModel<typeof model3DFile>;
 
 export const suggestion = pgTable(
   "Suggestion",
