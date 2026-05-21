@@ -31,45 +31,6 @@ This release is intended as a clean base for future developments. It includes:
 
 Downloads for this stable base are available from the GitHub release tag `v3.1.2`.
 
-## Quick Install
-
-Use this path for a local development setup with PostgreSQL, Redis, MinIO, and the Blender 3D worker in Docker.
-
-```bash
-git clone <repo-url>
-cd chatbot
-corepack enable
-pnpm install
-cp .env.example .env.local
-pnpm docker:up
-pnpm db:migrate
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-Minimum `.env.local` for local development:
-
-```env
-AUTH_SECRET=replace-with-output-of-openssl-rand-base64-32
-POSTGRES_URL=postgres://chatbot:chatbot@localhost:5433/chatbot
-REDIS_URL=redis://localhost:6379
-
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
-OPENAI_COMPATIBLE_API_KEY=not-needed
-OPENAI_COMPATIBLE_PROVIDER_NAME=lmstudio
-CHAT_MODEL_ID=your-local-chat-model
-TITLE_MODEL_ID=your-local-title-model
-
-UPLOAD_PUBLIC_BASE_URL=http://localhost:3000
-BLENDER_WORKER_URL=http://localhost:8010
-BLENDER_WORKER_OUTPUT_ROOT=/outputs
-BLENDER_DEBUGPY=0
-BLENDER_DEBUGPY_WAIT=0
-```
-
-If you do not need resumable streams locally, leave `REDIS_URL` empty. PostgreSQL is required.
-
 ## Requirements
 
 - **Node.js** >= 20
@@ -79,9 +40,11 @@ If you do not need resumable streams locally, leave `REDIS_URL` empty. PostgreSQ
 - **Blender Worker** en Docker para generación 3D headless
 - Opcional: **LM Studio**, **Ollama**, **NVIDIA NIM**, o cualquier proveedor OpenAI-compatible
 
-## Configuración Inicial
+## Instalación Local Rápida
 
-### 1. Clonar e instalar dependencias
+Usa este flujo para desarrollo local con PostgreSQL, Redis, MinIO y Blender worker en Docker.
+
+### 1. Clonar e instalar dependencias Node
 
 ```bash
 git clone <repo-url>
@@ -90,25 +53,40 @@ corepack enable
 pnpm install
 ```
 
-### 2. Servicios con Docker (recomendado)
+### 2. Crear `.env.local`
+
+Copia el ejemplo:
 
 ```bash
-docker compose -f docker-compose.local.yml up -d
+cp .env.example .env.local
 ```
 
-Equivalent package script:
+Genera `AUTH_SECRET` con Node.js:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Pega el valor resultante en `.env.local` y completa el resto de variables según la sección `Variables De Entorno`:
+
+```env
+AUTH_SECRET=pega-aqui-el-valor-generado
+```
+
+### 3. Levantar servicios locales
 
 ```bash
 pnpm docker:up
 ```
 
 Esto levanta:
-- **PostgreSQL 16** en puerto `5433`
-- **Redis 7** en puerto `6379`
-- **MinIO** (S3-compatible) en puerto `9000` (API) y `9001` (console)
-- **Blender Worker** en puerto `8010` para generación de modelos 3D imprimibles
 
-Useful local service commands:
+- PostgreSQL 16 en `localhost:5433`.
+- Redis 7 en `localhost:6379`.
+- MinIO en `localhost:9000` y consola en `localhost:9001`.
+- Blender worker en `localhost:8010`.
+
+Comandos útiles:
 
 ```bash
 pnpm docker:logs
@@ -118,54 +96,120 @@ pnpm worker:restart
 pnpm docker:down
 ```
 
-### 3. Variables de entorno
-
-Copia `.env.example` a `.env.local` y ajústalo:
+### 4. Migrar base de datos
 
 ```bash
-cp .env.example .env.local
+pnpm db:migrate
 ```
 
-Ejemplo completo:
+### 5. Ejecutar en desarrollo
+
+```bash
+pnpm dev
+```
+
+La aplicación estará disponible en [http://localhost:3000](http://localhost:3000).
+
+## Variables De Entorno
+
+### Desarrollo Local
+
+Valores recomendados para `.env.local` cuando usas `docker-compose.local.yml`:
 
 ```env
-# Autenticación — genera un secreto con: openssl rand -base64 32
-AUTH_SECRET=your-secret-here
-
-# Base de datos PostgreSQL
+AUTH_SECRET=pega-aqui-el-valor-generado-con-node
 POSTGRES_URL=postgres://chatbot:chatbot@localhost:5433/chatbot
-
-# Redis (opcional, para streams reanudables)
 REDIS_URL=redis://localhost:6379
 
-# Proveedor OpenAI-compatible
-# Para LM Studio local:
 OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
 OPENAI_COMPATIBLE_API_KEY=not-needed
 OPENAI_COMPATIBLE_PROVIDER_NAME=lmstudio
+CHAT_MODEL_ID=tu-modelo-local
+TITLE_MODEL_ID=tu-modelo-local
 
-# Para NVIDIA NIM / NVIDIA Integrate:
-# OPENAI_COMPATIBLE_BASE_URL=https://integrate.api.nvidia.com/v1
-# OPENAI_COMPATIBLE_API_KEY=su-api-key
-# OPENAI_COMPATIBLE_PROVIDER_NAME=nvidia
-
-# ID del modelo que usará el proveedor
-CHAT_MODEL_ID=escriba-aqui-el-modelo-real
-TITLE_MODEL_ID=escriba-aqui-el-modelo-real
-
-# Base URL pública para subida de archivos
 UPLOAD_PUBLIC_BASE_URL=http://localhost:3000
-
-# Worker Blender headless para modelos 3D
 BLENDER_WORKER_URL=http://localhost:8010
 BLENDER_WORKER_OUTPUT_ROOT=/outputs
 BLENDER_DEBUGPY=0
 BLENDER_DEBUGPY_WAIT=0
-
-# Optional app debug logging
 DEBUG_3D=0
 LOG_LEVEL=info
 ```
+
+### Producción
+
+Valores típicos para un servidor propio:
+
+```env
+NODE_ENV=production
+AUTH_SECRET=valor-fuerte-generado-con-node
+POSTGRES_URL=postgres://user:password@postgres-host:5432/chatbot
+REDIS_URL=redis://redis-host:6379
+
+OPENAI_COMPATIBLE_BASE_URL=https://tu-proveedor.example.com/v1
+OPENAI_COMPATIBLE_API_KEY=provider-secret
+OPENAI_COMPATIBLE_PROVIDER_NAME=tu-proveedor
+CHAT_MODEL_ID=modelo-produccion
+TITLE_MODEL_ID=modelo-produccion
+
+UPLOAD_PUBLIC_BASE_URL=https://tu-dominio.example.com
+BLENDER_WORKER_URL=http://blender-worker:8010
+BLENDER_WORKER_OUTPUT_ROOT=/outputs
+BLENDER_DEBUGPY=0
+BLENDER_DEBUGPY_WAIT=0
+DEBUG_3D=0
+LOG_LEVEL=info
+```
+
+Notas importantes:
+
+- `AUTH_SECRET` debe ser estable entre reinicios; si cambia, se invalidan sesiones/cookies.
+- `UPLOAD_PUBLIC_BASE_URL` debe apuntar a la URL pública real desde la que se sirven uploads y modelos generados.
+- `BLENDER_WORKER_URL` en producción debe ser una URL interna de red, no pública.
+- `BLENDER_DEBUGPY` y `BLENDER_DEBUGPY_WAIT` deben permanecer en `0` en producción.
+- Genera `AUTH_SECRET` con Node usando `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+
+## Proveedor OpenAI-Compatible
+
+Ejemplo para LM Studio local:
+
+```env
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+OPENAI_COMPATIBLE_API_KEY=not-needed
+OPENAI_COMPATIBLE_PROVIDER_NAME=lmstudio
+CHAT_MODEL_ID=escriba-aqui-el-modelo-real
+TITLE_MODEL_ID=escriba-aqui-el-modelo-real
+```
+
+Ejemplo para NVIDIA NIM / NVIDIA Integrate:
+
+```env
+OPENAI_COMPATIBLE_BASE_URL=https://integrate.api.nvidia.com/v1
+OPENAI_COMPATIBLE_API_KEY=su-api-key
+OPENAI_COMPATIBLE_PROVIDER_NAME=nvidia
+CHAT_MODEL_ID=escriba-aqui-el-modelo-real
+TITLE_MODEL_ID=escriba-aqui-el-modelo-real
+```
+
+## Acceso Remoto Y CORS
+
+Para producción, sirve la app detrás de un reverse proxy HTTPS como Nginx, Caddy, Traefik o un balanceador gestionado.
+
+Configuración recomendada:
+
+- Publica únicamente el puerto HTTPS del reverse proxy.
+- Reenvía el tráfico al servidor Node interno, normalmente `localhost:3000`.
+- No expongas públicamente PostgreSQL, Redis, MinIO, `blender-worker` ni el puerto `5678` de debugpy.
+- Define `UPLOAD_PUBLIC_BASE_URL=https://tu-dominio.example.com` para que uploads y modelos 3D usen URLs públicas correctas.
+- Usa `BLENDER_WORKER_URL=http://blender-worker:8010` o equivalente interno dentro de la red privada del servidor/compose.
+
+Sobre CORS:
+
+- Si frontend y API se sirven desde el mismo dominio, no necesitas CORS abierto.
+- El proyecto actualmente configura cabeceras CORS globales en `next.config.ts`.
+- Para producción, evita `Access-Control-Allow-Origin: *` si usas cookies/autenticación.
+- Restringe `Access-Control-Allow-Origin` al dominio real, por ejemplo `https://tu-dominio.example.com`.
+- Si integras un frontend externo en otro dominio, permite solo ese origen y revisa métodos/cabeceras estrictamente necesarios.
 
 ## Generación 3D
 
@@ -181,20 +225,6 @@ El motor inicial es Blender en modo headless dentro del servicio `blender-worker
 El pipeline usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
 
 > **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
-
-### 4. Migrar la base de datos
-
-```bash
-pnpm db:migrate
-```
-
-### 5. Ejecutar en desarrollo
-
-```bash
-pnpm dev
-```
-
-La aplicación estará disponible en [http://localhost:3000](http://localhost:3000).
 
 ## Scripts disponibles
 
@@ -267,53 +297,49 @@ lib/
   db/            → Drizzle ORM, esquemas y queries
 ```
 
-## Despliegue
+## Despliegue Self-Hosted
 
-The project builds a self-contained Next.js server with `output: "standalone"`:
+El proyecto usa `output: "standalone"` de Next.js. Esto permite desplegar un runtime Node.js autocontenido sin depender de Vercel.
+
+### Servicios De Producción
+
+Servicios mínimos recomendados:
+
+- Un proceso Node.js 20+ para el servidor Next.js standalone.
+- PostgreSQL 16 con volumen persistente y backups.
+- Redis 7 opcional para streams reanudables.
+- Blender worker si quieres generación 3D.
+- Reverse proxy HTTPS como Nginx, Caddy, Traefik o un load balancer.
+- Almacenamiento persistente para `public/uploads` y `public/generated-3d`.
+
+### Orden De Instalación En Servidor Propio
+
+1. Preparar el servidor runtime.
 
 ```bash
-pnpm build
+sudo mkdir -p /opt/chatbot
+sudo chown "$USER":"$USER" /opt/chatbot
 ```
 
-The `.next/standalone` folder contains the production server for any Node.js host without Vercel runtime services.
+2. Crear el archivo de entorno de producción en el servidor.
 
-### Self-Hosted Production Checklist
-
-Recommended minimal production services:
-
-- One Node.js 20+ process for the Next.js standalone server.
-- One PostgreSQL 16 database with persistent storage and regular backups.
-- Optional Redis 7 for resumable streams.
-- One Blender worker container if 3D model generation is enabled.
-- A reverse proxy such as Nginx, Caddy, Traefik, or a managed load balancer with HTTPS.
-- Persistent local volumes or S3-compatible storage for uploads and generated 3D files.
-
-Production environment variables:
-
-```env
-NODE_ENV=production
-AUTH_SECRET=strong-random-secret
-POSTGRES_URL=postgres://user:password@postgres-host:5432/chatbot
-REDIS_URL=redis://redis-host:6379
-
-OPENAI_COMPATIBLE_BASE_URL=https://your-provider.example.com/v1
-OPENAI_COMPATIBLE_API_KEY=provider-secret
-OPENAI_COMPATIBLE_PROVIDER_NAME=your-provider-name
-CHAT_MODEL_ID=production-chat-model
-TITLE_MODEL_ID=production-title-model
-
-UPLOAD_PUBLIC_BASE_URL=https://your-domain.example.com
-BLENDER_WORKER_URL=http://blender-worker:8010
-BLENDER_WORKER_OUTPUT_ROOT=/outputs
-BLENDER_DEBUGPY=0
-BLENDER_DEBUGPY_WAIT=0
-DEBUG_3D=0
-LOG_LEVEL=info
+```bash
+nano /opt/chatbot/.env
 ```
 
-### Self-Hosted Deployment Steps
+Usa las variables de la sección `Producción`. Genera `AUTH_SECRET` con Node y no lo cambies entre despliegues.
 
-1. Build the app on the server or in CI:
+3. Arrancar infraestructura persistente.
+
+Puedes usar `docker-compose.local.yml` como base, pero en producción conviene crear un compose dedicado con volúmenes persistentes y sin puertos públicos innecesarios.
+
+```bash
+docker compose -f docker-compose.local.yml up -d postgres redis blender-worker
+```
+
+No expongas PostgreSQL, Redis, MinIO, `blender-worker` ni `5678` a internet.
+
+4. Construir la aplicación en CI, en tu máquina de build o en el servidor.
 
 ```bash
 corepack enable
@@ -321,55 +347,122 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-2. Copy production artifacts to the runtime host:
+5. Preparar la carpeta standalone completa.
+
+Después de `pnpm build`, Next crea `.next/standalone`, pero los assets estáticos y `public` no siempre quedan copiados dentro. Cópialos explícitamente:
+
+```bash
+rm -rf .next/standalone/public .next/standalone/.next/static
+cp -R public .next/standalone/public
+mkdir -p .next/standalone/.next
+cp -R .next/static .next/standalone/.next/static
+```
+
+El resultado que debes desplegar es la carpeta `.next/standalone` ya preparada:
 
 ```text
 .next/standalone/
-.next/static/
-public/
-package.json
+  server.js
+  package.json
+  node_modules/
+  public/
+    uploads/
+    generated-3d/
+  .next/
+    static/
 ```
 
-3. Start required infrastructure:
+6. Copiar artifacts al host runtime.
+
+Desde la máquina donde ejecutaste `pnpm build`, copia el contenido preparado hacia el servidor. Ejemplo con `rsync`:
 
 ```bash
-docker compose -f docker-compose.local.yml up -d postgres redis blender-worker
+rsync -avz --delete .next/standalone/ deploy@tu-servidor:/opt/chatbot/
 ```
 
-For production, prefer a dedicated compose file or orchestrator where PostgreSQL and generated files use named persistent volumes or mounted disks. Do not expose PostgreSQL, Redis, MinIO, or the Blender debug port publicly.
-
-4. Run migrations before starting the new app version:
+Ejemplo con `scp`:
 
 ```bash
-pnpm db:migrate
+scp -r .next/standalone/* deploy@tu-servidor:/opt/chatbot/
 ```
 
-5. Start the standalone server:
+El origen es tu máquina de build o CI. El destino es el directorio runtime del servidor, por ejemplo `/opt/chatbot/`.
+
+7. Ejecutar migraciones contra la base de datos de producción.
+
+Las migraciones se ejecutan desde el checkout del proyecto o desde tu pipeline de despliegue, con `POSTGRES_URL` apuntando a producción:
 
 ```bash
-cd .next/standalone
-node server.js
+POSTGRES_URL=postgres://user:password@postgres-host:5432/chatbot pnpm db:migrate
 ```
 
-6. Put a reverse proxy in front of the Node process:
+8. Iniciar el servidor standalone.
 
-- Terminate TLS at the proxy.
-- Forward only HTTP traffic to the app, usually `localhost:3000`.
-- Set upload/body limits according to expected file size.
-- Enable gzip or brotli compression.
-- Add request timeouts long enough for streaming chat responses.
+En el host runtime:
 
-### Production Resource And Security Notes
+```bash
+cd /opt/chatbot
+set -a
+. ./.env
+set +a
+PORT=3000 NODE_ENV=production node server.js
+```
 
-- Run the Next.js app and Blender worker as separate processes or containers so heavy 3D generation cannot starve the web process.
-- Keep `BLENDER_DEBUGPY=0` and do not publish port `5678` in production.
-- Restrict worker network access so only the app can call `BLENDER_WORKER_URL`.
-- Keep generated 3D outputs and uploads on persistent storage; `public/generated-3d` and `public/uploads` are local-development defaults.
-- Use strong database credentials and avoid exposing PostgreSQL/Redis to the public internet.
-- Back up PostgreSQL and generated-file storage together, since chat history references generated artifacts.
-- Use a process manager such as systemd, PM2, Docker restart policies, or Kubernetes probes to restart failed services.
-- Monitor disk usage for `public/generated-3d`, Blender worker CPU/RAM, database size, and reverse proxy 5xx rates.
-- Use least-privilege API keys for the OpenAI-compatible provider and rotate them regularly.
+Para producción real, ejecuta este comando con `systemd`, PM2, Docker, Kubernetes o el supervisor que uses.
+
+9. Configurar reverse proxy HTTPS.
+
+El reverse proxy debe terminar TLS y reenviar tráfico al proceso Node interno.
+
+Ejemplo conceptual de Nginx:
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name tu-dominio.example.com;
+
+  client_max_body_size 25m;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 300s;
+  }
+}
+```
+
+### Despliegue Con Docker Propio
+
+Si prefieres empaquetar la app en una imagen Docker, copia estos paths al contenedor:
+
+```text
+.next/standalone/ -> /app/
+.next/static/ -> /app/.next/static/
+public/ -> /app/public/
+```
+
+El comando de runtime sería:
+
+```bash
+node /app/server.js
+```
+
+Mantén PostgreSQL, Redis y Blender worker como servicios separados para aislar consumo de CPU/RAM y facilitar reinicios independientes.
+
+### Seguridad Y Recursos En Producción
+
+- Ejecuta Next.js y Blender worker como servicios separados para que la generación 3D no bloquee el servidor web.
+- Mantén `BLENDER_DEBUGPY=0` y no publiques `5678`.
+- Restringe `BLENDER_WORKER_URL` para que solo la app pueda llamar al worker.
+- Usa almacenamiento persistente para `public/uploads` y `public/generated-3d`.
+- Haz backup conjunto de PostgreSQL y los archivos generados, porque el historial referencia artifacts en disco.
+- Usa credenciales fuertes para PostgreSQL y Redis.
+- Rota las API keys del proveedor OpenAI-compatible.
+- Monitoriza CPU/RAM del worker, uso de disco, tamaño de PostgreSQL y errores 5xx del proxy.
 
 ## Versionado
 
