@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.3] - 2026-05-26
+
+### Fixed
+
+- Serve newly generated 3D files through a dynamic Next.js route so `.glb`, `.blend`, `.stl`, and `scene.json` files are available immediately under `pnpm start` without restarting the server.
+- Store new 3D artifact file URLs as relative `/generated-3d/...` paths to avoid persisting environment-specific hosts such as `localhost`.
+- Use the request origin as the fallback public base URL for regular uploads when `UPLOAD_PUBLIC_BASE_URL` is not configured.
+
+### Documentation
+
+- Documented the runtime serving path for generated 3D files and the difference between upload public URLs and 3D relative URLs.
+
 ## [3.1.1] - 2026-05-19
 
 ### Added
