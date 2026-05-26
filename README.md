@@ -165,7 +165,8 @@ LOG_LEVEL=info
 Notas importantes:
 
 - `AUTH_SECRET` debe ser estable entre reinicios; si cambia, se invalidan sesiones/cookies.
-- `UPLOAD_PUBLIC_BASE_URL` debe apuntar a la URL pública real desde la que se sirven uploads y modelos generados.
+- `UPLOAD_PUBLIC_BASE_URL` debe apuntar a la URL pública real desde la que se sirven uploads. Si no se define, la API de uploads usa el origen de la request.
+- Los modelos 3D generados usan rutas relativas bajo `/generated-3d/...`, por lo que funcionan al cambiar entre localhost, dominio público o reverse proxy.
 - `BLENDER_WORKER_URL` en producción debe ser una URL interna de red, no pública.
 - `BLENDER_DEBUGPY` y `BLENDER_DEBUGPY_WAIT` deben permanecer en `0` en producción.
 - Genera `AUTH_SECRET` con Node usando `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
@@ -201,7 +202,8 @@ Configuración recomendada:
 - Publica únicamente el puerto HTTPS del reverse proxy.
 - Reenvía el tráfico al servidor Node interno, normalmente `localhost:3000`.
 - No expongas públicamente PostgreSQL, Redis, MinIO, `blender-worker` ni el puerto `5678` de debugpy.
-- Define `UPLOAD_PUBLIC_BASE_URL=https://tu-dominio.example.com` para que uploads y modelos 3D usen URLs públicas correctas.
+- Define `UPLOAD_PUBLIC_BASE_URL=https://tu-dominio.example.com` para que los uploads usen URLs públicas correctas.
+- Los enlaces de modelos 3D nuevos se guardan como rutas relativas bajo `/generated-3d/...` y se resuelven contra el dominio actual.
 - Usa `BLENDER_WORKER_URL=http://blender-worker:8010` o equivalente interno dentro de la red privada del servidor/compose.
 
 Sobre CORS:
@@ -230,6 +232,8 @@ La integración 3D inicial está diseñada para piezas imprimibles en milímetro
 El motor inicial es Blender en modo headless dentro del servicio `blender-worker`. La arquitectura usa un provider modular para poder añadir OpenSCAD, FreeCAD u otros motores en futuras versiones.
 
 El pipeline usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
+
+Los artifacts 3D nuevos guardan enlaces relativos como `/generated-3d/<jobId>/model.glb`. Esto evita persistir dominios de entorno como `localhost` y hace que los enlaces funcionen igual en desarrollo, producción y detrás de reverse proxies. Esos archivos se sirven mediante una ruta dinámica de Next.js, no solo como assets estáticos de `public`, para que los modelos creados durante el runtime estén disponibles sin reiniciar `pnpm start`. Los artifacts 3D generados antes de este comportamiento pueden contener URLs absolutas antiguas y se consideran descartables durante el desarrollo.
 
 > **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
 

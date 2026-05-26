@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     await writeFile(filePath, fileBuffer);
 
     const baseUrl =
-      process.env.UPLOAD_PUBLIC_BASE_URL ?? "http://localhost:3000";
+      process.env.UPLOAD_PUBLIC_BASE_URL ?? new URL(request.url).origin;
 
     const pathname = `/uploads/${storedName}`;
     const url = `${baseUrl}${pathname}`;

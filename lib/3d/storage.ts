@@ -1,9 +1,6 @@
 import path from "node:path";
 import type { Generated3DFile, Model3DFormat } from "./types";
 
-const PUBLIC_BASE_URL =
-  process.env.UPLOAD_PUBLIC_BASE_URL ?? "http://localhost:3000";
-
 export function getModel3DOutputPath(jobId: string) {
   return path.join(process.cwd(), "public", "generated-3d", jobId);
 }
@@ -32,7 +29,7 @@ export function createGenerated3DFile({
   return {
     format,
     pathname,
-    url: `${PUBLIC_BASE_URL}${pathname}`,
+    url: pathname,
     size,
   };
 }
