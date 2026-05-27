@@ -15,6 +15,13 @@
       "when": 1779140000000,
       "tag": "0001_model3d",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779872400000,
+      "tag": "0002_model3d_tripo3d",
+      "breakpoints": true
     }
   ]
 }

@@ -131,6 +131,13 @@ TITLE_MODEL_ID=tu-modelo-local
 UPLOAD_PUBLIC_BASE_URL=http://localhost:3000
 BLENDER_WORKER_URL=http://localhost:8010
 BLENDER_WORKER_OUTPUT_ROOT=/outputs
+
+TRIPO3D_API_KEY=
+TRIPO3D_API_BASE_URL=https://api.tripo3d.ai/v2/openapi
+TRIPO3D_FACE_LIMIT=3000
+TRIPO3D_TEXTURE=false
+TRIPO3D_MODEL_VERSION=
+
 BLENDER_DEBUGPY=0
 BLENDER_DEBUGPY_WAIT=0
 DEBUG_3D=0
@@ -156,6 +163,13 @@ TITLE_MODEL_ID=modelo-produccion
 UPLOAD_PUBLIC_BASE_URL=https://tu-dominio.example.com
 BLENDER_WORKER_URL=http://blender-worker:8010
 BLENDER_WORKER_OUTPUT_ROOT=/outputs
+
+TRIPO3D_API_KEY=tripo-secret
+TRIPO3D_API_BASE_URL=https://api.tripo3d.ai/v2/openapi
+TRIPO3D_FACE_LIMIT=3000
+TRIPO3D_TEXTURE=false
+TRIPO3D_MODEL_VERSION=
+
 BLENDER_DEBUGPY=0
 BLENDER_DEBUGPY_WAIT=0
 DEBUG_3D=0
@@ -168,6 +182,8 @@ Notas importantes:
 - `UPLOAD_PUBLIC_BASE_URL` debe apuntar a la URL pública real desde la que se sirven uploads. Si no se define, la API de uploads usa el origen de la request.
 - Los modelos 3D generados usan rutas relativas bajo `/generated-3d/...`, por lo que funcionan al cambiar entre localhost, dominio público o reverse proxy.
 - `BLENDER_WORKER_URL` en producción debe ser una URL interna de red, no pública.
+- `TRIPO3D_API_KEY` habilita el provider Tripo3D y debe tratarse como secreto. No lo commitees.
+- `TRIPO3D_TEXTURE=false`, `TRIPO3D_FACE_LIMIT=3000` y `TRIPO3D_MODEL_VERSION` vacío son valores orientados a consumir el mínimo razonable de créditos API.
 - `BLENDER_DEBUGPY` y `BLENDER_DEBUGPY_WAIT` deben permanecer en `0` en producción.
 - Genera `AUTH_SECRET` con Node usando `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
 
@@ -222,18 +238,26 @@ Esto mejora despliegues self-hosted, CI sin acceso externo y servidores detrás 
 
 ## Generación 3D
 
-La integración 3D inicial está diseñada para piezas imprimibles en milímetros reales. El chat puede invocar la tool `create3DModel`, que crea un artifact `model3d` con:
+La integración 3D está diseñada para crear modelos desde el chat. Cuando el usuario pide una pieza 3D sin indicar motor, el asistente pregunta conversacionalmente si quiere usar Blender o Tripo3D antes de invocar la tool `create3DModel`.
+
+El artifact `model3d` incluye:
 
 - Visor 3D interactivo a partir de `.glb`.
-- Descarga del archivo Blender original `.blend`.
-- Descarga para impresión 3D `.stl`.
-- Descarga/visualización de la receta reproducible `scene.json`.
+- Descarga del `.glb` generado.
+- Descarga del archivo Blender original `.blend` cuando el provider lo genera.
+- Descarga de `.stl` cuando existe y exportación STL en navegador desde el `.glb`.
+- Descarga/visualización de la receta reproducible `scene.json` cuando está disponible.
 
-El motor inicial es Blender en modo headless dentro del servicio `blender-worker`. La arquitectura usa un provider modular para poder añadir OpenSCAD, FreeCAD u otros motores en futuras versiones.
+Providers disponibles:
 
-El pipeline usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
+- `blender`: motor local headless dentro del servicio `blender-worker`. Es la opción recomendada para piezas imprimibles, CAD-like y con dimensiones reales en milímetros.
+- `tripo3d`: provider remoto `text_to_model` de Tripo3D. Es útil para modelos visuales u orgánicos. Consume créditos externos y no garantiza precisión CAD para piezas funcionales como roscas, tolerancias o encajes.
+
+El pipeline de Blender usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Tripo3D usa el prompt textual y descarga el `.glb` resultante a storage local para no depender de URLs firmadas externas que caducan. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
 
 Los artifacts 3D nuevos guardan enlaces relativos como `/generated-3d/<jobId>/model.glb`. Esto evita persistir dominios de entorno como `localhost` y hace que los enlaces funcionen igual en desarrollo, producción y detrás de reverse proxies. Esos archivos se sirven mediante una ruta dinámica de Next.js, no solo como assets estáticos de `public`, para que los modelos creados durante el runtime estén disponibles sin reiniciar `pnpm start`. Los artifacts 3D generados antes de este comportamiento pueden contener URLs absolutas antiguas y se consideran descartables durante el desarrollo.
+
+Para minimizar créditos de Tripo3D, la app envía por defecto `texture=false`, `pbr=false`, `geometry_quality=standard` y `face_limit=3000`. Si quieres texturas, define `TRIPO3D_TEXTURE=true`, asumiendo mayor coste.
 
 > **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
 

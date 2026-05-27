@@ -12,6 +12,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Artifact } from "@/components/chat/create-artifact";
 import { DownloadIcon, MessageIcon } from "@/components/chat/icons";
@@ -119,6 +120,34 @@ function ModelViewer({ url }: { url: string }) {
   );
 }
 
+function downloadBlob({ blob, filename }: { blob: Blob; filename: string }) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function getSafeFilename(title: string) {
+  return `${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "model"}.stl`;
+}
+
+async function exportGlbToStl({ url, title }: { url: string; title: string }) {
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync(url);
+  const stl = new STLExporter().parse(gltf.scene, { binary: true });
+  const blob =
+    typeof stl === "string"
+      ? new Blob([stl], { type: "model/stl" })
+      : new Blob([stl], { type: "model/stl" });
+
+  downloadBlob({ blob, filename: getSafeFilename(title) });
+}
+
 export const model3DArtifact = new Artifact<"model3d">({
   kind: "model3d",
   description:
@@ -204,7 +233,7 @@ export const model3DArtifact = new Artifact<"model3d">({
           <div className="rounded-xl border p-8 text-muted-foreground">
             {model.status === "failed"
               ? model.error
-              : "Blender is generating the model files..."}
+              : `${model.provider} is generating the model files...`}
           </div>
         )}
 
@@ -223,6 +252,25 @@ export const model3DArtifact = new Artifact<"model3d">({
               </div>
             </a>
           ))}
+          {glb ? (
+            <button
+              className="rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+              onClick={async () => {
+                try {
+                  await exportGlbToStl({ url: glb.url, title: model.title });
+                  toast.success("STL exported in your browser");
+                } catch {
+                  toast.error("Failed to export STL");
+                }
+              }}
+              type="button"
+            >
+              <div className="font-medium uppercase">.stl</div>
+              <div className="text-sm text-muted-foreground">
+                Export from GLB
+              </div>
+            </button>
+          ) : null}
         </div>
 
         <details className="rounded-lg border p-4">

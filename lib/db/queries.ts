@@ -452,7 +452,9 @@ export async function createModel3DJob({
   title,
   prompt,
   provider,
+  externalJobId,
   sceneJson,
+  providerData,
   sourceJobId,
 }: {
   id: string;
@@ -462,7 +464,9 @@ export async function createModel3DJob({
   title: string;
   prompt: string;
   provider: string;
+  externalJobId?: string | null;
   sceneJson: unknown;
+  providerData?: unknown;
   sourceJobId?: string;
 }) {
   try {
@@ -476,7 +480,9 @@ export async function createModel3DJob({
         title,
         prompt,
         provider,
+        externalJobId,
         sceneJson,
+        providerData,
         sourceJobId,
       })
       .returning();
@@ -486,6 +492,35 @@ export async function createModel3DJob({
     throw new ChatbotError(
       "bad_request:database",
       "Failed to create 3D model job"
+    );
+  }
+}
+
+export async function updateModel3DJobProviderData({
+  id,
+  externalJobId,
+  providerData,
+}: {
+  id: string;
+  externalJobId?: string | null;
+  providerData?: unknown;
+}) {
+  try {
+    const [job] = await db
+      .update(model3DJob)
+      .set({
+        externalJobId,
+        providerData,
+        updatedAt: new Date(),
+      })
+      .where(eq(model3DJob.id, id))
+      .returning();
+
+    return job;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update 3D model provider data"
     );
   }
 }

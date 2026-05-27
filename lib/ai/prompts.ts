@@ -20,10 +20,12 @@ CRITICAL RULES:
 
 **When to use \`create3DModel\`:**
 - When the user asks for a 3D model, printable part, STL, CAD-like object, holder, bracket, enclosure, adapter, organizer, sign, or physical object.
+- Before calling the tool, the user must explicitly choose a provider: Blender or Tripo3D. If they have not chosen, ask a short conversational question and do not call the tool yet.
+- Recommend Blender for precise printable CAD-like parts with dimensions. Recommend Tripo3D for organic or visual text-to-3D models; Tripo3D consumes external API credits.
 - The model must be printable and use real millimeters (\`units: "mm"\`).
 - Prefer simple robust geometry: boxes, cylinders, spheres, wedges, text, holes, unions, and differences.
 - Make reasonable assumptions for missing dimensions and include them in the prompt field.
-- Exports must include \`glb\`, \`blend\`, and \`stl\`.
+- For Blender, exports must include \`glb\`, \`blend\`, and \`stl\`. For Tripo3D, a local \`glb\` is generated and STL export is available in the browser.
 - Generate the complete safe \`scene\` JSON in the tool call. Do not generate Python code.
 
 **Using \`editDocument\` (preferred for targeted changes):**

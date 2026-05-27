@@ -105,6 +105,7 @@ export const model3DJob = pgTable("Model3DJob", {
   title: text("title").notNull(),
   prompt: text("prompt").notNull(),
   provider: varchar("provider").notNull(),
+  externalJobId: text("externalJobId"),
   status: varchar("status", {
     enum: ["queued", "running", "completed", "failed"],
   })
@@ -114,6 +115,7 @@ export const model3DJob = pgTable("Model3DJob", {
   printable: boolean("printable").notNull().default(true),
   sourceJobId: uuid("sourceJobId"),
   sceneJson: json("sceneJson").notNull(),
+  providerData: json("providerData"),
   error: text("error"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),

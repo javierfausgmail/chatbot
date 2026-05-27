@@ -3,6 +3,9 @@ import { z } from "zod";
 export const model3DFormats = ["glb", "blend", "stl", "scene"] as const;
 export type Model3DFormat = (typeof model3DFormats)[number];
 
+export const model3DProviderIds = ["blender", "tripo3d"] as const;
+export type Model3DProviderId = (typeof model3DProviderIds)[number];
+
 export const primitive3DObjectSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.enum(["box", "cylinder", "sphere", "wedge", "text"]),
@@ -69,6 +72,7 @@ export type CreateModel3DJobInput = {
   chatId: string;
   userId: string;
   documentId: string;
+  provider: Model3DProviderId;
   title: string;
   prompt: string;
   scene: Printable3DScene;
@@ -76,7 +80,7 @@ export type CreateModel3DJobInput = {
 };
 
 export type Model3DProvider = {
-  id: string;
+  id: Model3DProviderId;
   createJob(input: CreateModel3DJobInput): Promise<Model3DArtifactContent>;
   syncJob(jobId: string): Promise<Model3DArtifactContent | null>;
 };

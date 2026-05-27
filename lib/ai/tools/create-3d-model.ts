@@ -2,7 +2,7 @@ import { tool, type UIMessageStreamWriter } from "ai";
 import type { Session } from "next-auth";
 import { z } from "zod";
 import { createModel3DJob } from "@/lib/3d/orchestrator";
-import { printable3DSceneSchema } from "@/lib/3d/types";
+import { model3DProviderIds, printable3DSceneSchema } from "@/lib/3d/types";
 import { saveDocument } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
@@ -20,8 +20,13 @@ export const create3DModel = ({
 }: Create3DModelProps) =>
   tool({
     description:
-      "Create a printable 3D model artifact in real millimeters. Use this when the user asks for a 3D model, STL, 3D printing part, CAD-like object, holder, bracket, enclosure, organizer, adapter, sign, or physical object. Generate a safe structured scene JSON using only allowed primitives. Prefer practical printable parts with simple geometry, real dimensions, and millimeter units.",
+      "Create a 3D model artifact after the user has explicitly chosen a provider. If the user asks for a 3D model but has not selected a provider, ask them to choose Blender or Tripo3D and do not call this tool yet. Use Blender for precise printable CAD-like parts in real millimeters. Use Tripo3D for organic/visual text-to-3D models; it uses external API credits, so keep requests concise and low complexity.",
     inputSchema: z.object({
+      provider: z
+        .enum(model3DProviderIds)
+        .describe(
+          "The user-selected generation provider. Must be 'blender' or 'tripo3d'."
+        ),
       title: z.string().min(1).max(120).describe("Short model title"),
       prompt: z
         .string()
@@ -29,7 +34,7 @@ export const create3DModel = ({
         .max(2000)
         .describe("Original user request and relevant assumptions"),
       scene: printable3DSceneSchema.describe(
-        "Validated scene JSON. Units must be mm and exports must include glb, blend, and stl."
+        "Validated scene JSON in millimeters. Blender uses this scene directly; Tripo3D uses the prompt but the scene is kept as reproducible metadata."
       ),
       sourceJobId: z
         .string()
@@ -37,7 +42,7 @@ export const create3DModel = ({
         .optional()
         .describe("Previous 3D job id when creating a new revision"),
     }),
-    execute: async ({ title, prompt, scene, sourceJobId }) => {
+    execute: async ({ provider, title, prompt, scene, sourceJobId }) => {
       if (!session.user?.id) {
         throw new Error("Unauthorized");
       }
@@ -53,6 +58,7 @@ export const create3DModel = ({
         chatId,
         userId: session.user.id,
         documentId: id,
+        provider,
         title,
         prompt,
         scene,
@@ -79,7 +85,7 @@ export const create3DModel = ({
         title,
         kind: "model3d",
         content:
-          "A printable 3D model job was created and is now visible to the user. The artifact will update when Blender finishes exporting GLB, BLEND, and STL files.",
+          "A 3D model job was created and is now visible to the user. The artifact will update when the selected provider finishes exporting files.",
       };
     },
   });
