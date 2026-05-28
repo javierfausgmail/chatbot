@@ -41,6 +41,7 @@ type Tripo3DTaskResponse = {
     status?: Tripo3DTaskStatus;
     output?: {
       model?: string;
+      base_model?: string;
       rendered_image?: string;
       generated_image?: string;
     };
@@ -48,6 +49,13 @@ type Tripo3DTaskResponse = {
     consumed_credit?: number;
     result?: unknown;
   };
+};
+
+type Tripo3DAsset = string | { url?: string } | null | undefined;
+
+type Tripo3DTaskResult = {
+  model?: Tripo3DAsset;
+  base_model?: Tripo3DAsset;
 };
 
 function toArtifactContent({
@@ -86,6 +94,25 @@ function mapTripo3DStatus(status?: Tripo3DTaskStatus) {
     return "running" as const;
   }
   return "queued" as const;
+}
+
+function getAssetUrl(asset: Tripo3DAsset) {
+  if (typeof asset === "string") {
+    return asset;
+  }
+
+  return asset?.url;
+}
+
+function getTripo3DModelUrl(task: NonNullable<Tripo3DTaskResponse["data"]>) {
+  const result = task.result as Tripo3DTaskResult | undefined;
+
+  return (
+    task.output?.model ??
+    task.output?.base_model ??
+    getAssetUrl(result?.model) ??
+    getAssetUrl(result?.base_model)
+  );
 }
 
 async function createRemoteTask(input: CreateModel3DJobInput) {
@@ -269,7 +296,7 @@ export const tripo3DProvider: Model3DProvider = {
         providerData: remoteTask,
       });
 
-      const modelUrl = remoteTask.output?.model;
+      const modelUrl = getTripo3DModelUrl(remoteTask);
 
       if (status === "completed" && !modelUrl) {
         currentJob =
