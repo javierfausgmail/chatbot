@@ -6,6 +6,35 @@ export type Model3DFormat = (typeof model3DFormats)[number];
 export const model3DProviderIds = ["blender", "tripo3d"] as const;
 export type Model3DProviderId = (typeof model3DProviderIds)[number];
 
+export const tripo3DPresets = [
+  "fast",
+  "balanced",
+  "max_quality",
+  "custom",
+] as const;
+
+export const tripo3DOptionsSchema = z.object({
+  preset: z.enum(tripo3DPresets).optional(),
+  model_version: z.string().min(1).max(64).optional(),
+  negative_prompt: z.string().min(1).max(255).optional(),
+  texture: z.boolean().optional(),
+  pbr: z.boolean().optional(),
+  texture_quality: z.enum(["standard", "detailed"]).optional(),
+  geometry_quality: z.enum(["standard", "detailed"]).optional(),
+  face_limit: z.number().int().positive().max(2_000_000).optional(),
+  smart_low_poly: z.boolean().optional(),
+  quad: z.boolean().optional(),
+  generate_parts: z.boolean().optional(),
+  auto_size: z.boolean().optional(),
+  export_uv: z.boolean().optional(),
+  image_seed: z.number().int().optional(),
+  model_seed: z.number().int().optional(),
+  texture_seed: z.number().int().optional(),
+  compress: z.enum(["geometry"]).optional(),
+});
+
+export type Tripo3DOptions = z.infer<typeof tripo3DOptionsSchema>;
+
 export const primitive3DObjectSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.enum(["box", "cylinder", "sphere", "wedge", "text"]),
@@ -76,6 +105,7 @@ export type CreateModel3DJobInput = {
   title: string;
   prompt: string;
   scene: Printable3DScene;
+  tripo3dOptions?: Tripo3DOptions;
   sourceJobId?: string;
 };
 

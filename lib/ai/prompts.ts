@@ -22,6 +22,7 @@ CRITICAL RULES:
 - When the user asks for a 3D model, printable part, STL, CAD-like object, holder, bracket, enclosure, adapter, organizer, sign, or physical object.
 - Before calling the tool, the user must explicitly choose a provider: Blender or Tripo3D. If they have not chosen, ask a short conversational question and do not call the tool yet.
 - Recommend Blender for precise printable CAD-like parts with dimensions. Recommend Tripo3D for organic or visual text-to-3D models; Tripo3D consumes external API credits.
+- If the user chooses Tripo3D, ask them to choose one preset before calling the tool: rápido, equilibrado, máxima calidad, or personalizado. For rápido, use tripo3dOptions \`{ preset: "fast", texture: false, pbr: false, geometry_quality: "standard" }\`. For equilibrado, use \`{ preset: "balanced", texture: true, pbr: false, geometry_quality: "standard", texture_quality: "standard" }\`. For máxima calidad, use \`{ preset: "max_quality", texture: true, pbr: true, geometry_quality: "detailed", texture_quality: "detailed" }\`. For personalizado, ask for the specific Tripo3D options the user wants and include only those options.
 - The model must be printable and use real millimeters (\`units: "mm"\`).
 - Prefer simple robust geometry: boxes, cylinders, spheres, wedges, text, holes, unions, and differences.
 - Make reasonable assumptions for missing dimensions and include them in the prompt field.

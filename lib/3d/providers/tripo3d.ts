@@ -21,10 +21,6 @@ import type {
 
 const TRIPO3D_API_BASE_URL =
   process.env.TRIPO3D_API_BASE_URL ?? "https://api.tripo3d.ai/v2/openapi";
-const TRIPO3D_FACE_LIMIT = Number(process.env.TRIPO3D_FACE_LIMIT ?? 3000);
-const TRIPO3D_TEXTURE = ["1", "true"].includes(
-  process.env.TRIPO3D_TEXTURE ?? ""
-);
 
 type Tripo3DTaskStatus =
   | "queued"
@@ -125,18 +121,12 @@ async function createRemoteTask(input: CreateModel3DJobInput) {
   const body: Record<string, unknown> = {
     type: "text_to_model",
     prompt: input.prompt,
-    texture: TRIPO3D_TEXTURE,
-    pbr: false,
-    geometry_quality: "standard",
-    face_limit: Number.isFinite(TRIPO3D_FACE_LIMIT) ? TRIPO3D_FACE_LIMIT : 3000,
   };
 
-  if (TRIPO3D_TEXTURE) {
-    body.texture_quality = "standard";
-  }
-
-  if (process.env.TRIPO3D_MODEL_VERSION) {
-    body.model_version = process.env.TRIPO3D_MODEL_VERSION;
+  for (const [key, value] of Object.entries(input.tripo3dOptions ?? {})) {
+    if (key !== "preset" && value !== undefined) {
+      body[key] = value;
+    }
   }
 
   const response = await fetch(`${TRIPO3D_API_BASE_URL}/task`, {
@@ -156,7 +146,12 @@ async function createRemoteTask(input: CreateModel3DJobInput) {
     throw new Error(payload?.message ?? "Failed to create Tripo3D task");
   }
 
-  return { taskId: payload.data.task_id, request: body, response: payload.data };
+  return {
+    taskId: payload.data.task_id,
+    preset: input.tripo3dOptions?.preset,
+    request: body,
+    response: payload.data,
+  };
 }
 
 async function getRemoteTask(taskId: string) {

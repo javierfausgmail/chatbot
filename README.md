@@ -134,9 +134,6 @@ BLENDER_WORKER_OUTPUT_ROOT=/outputs
 
 TRIPO3D_API_KEY=
 TRIPO3D_API_BASE_URL=https://api.tripo3d.ai/v2/openapi
-TRIPO3D_FACE_LIMIT=3000
-TRIPO3D_TEXTURE=false
-TRIPO3D_MODEL_VERSION=
 
 BLENDER_DEBUGPY=0
 BLENDER_DEBUGPY_WAIT=0
@@ -166,9 +163,6 @@ BLENDER_WORKER_OUTPUT_ROOT=/outputs
 
 TRIPO3D_API_KEY=tripo-secret
 TRIPO3D_API_BASE_URL=https://api.tripo3d.ai/v2/openapi
-TRIPO3D_FACE_LIMIT=3000
-TRIPO3D_TEXTURE=false
-TRIPO3D_MODEL_VERSION=
 
 BLENDER_DEBUGPY=0
 BLENDER_DEBUGPY_WAIT=0
@@ -183,7 +177,7 @@ Notas importantes:
 - Los modelos 3D generados usan rutas relativas bajo `/generated-3d/...`, por lo que funcionan al cambiar entre localhost, dominio público o reverse proxy.
 - `BLENDER_WORKER_URL` en producción debe ser una URL interna de red, no pública.
 - `TRIPO3D_API_KEY` habilita el provider Tripo3D y debe tratarse como secreto. No lo commitees.
-- `TRIPO3D_TEXTURE=false`, `TRIPO3D_FACE_LIMIT=3000` y `TRIPO3D_MODEL_VERSION` vacío son valores orientados a consumir el mínimo razonable de créditos API.
+- La calidad, texturas, PBR, límites de caras y resto de parámetros de Tripo3D se eligen conversacionalmente por preset o configuración personalizada. La app no aplica límites silenciosos por variable de entorno.
 - `BLENDER_DEBUGPY` y `BLENDER_DEBUGPY_WAIT` deben permanecer en `0` en producción.
 - Genera `AUTH_SECRET` con Node usando `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
 
@@ -253,11 +247,18 @@ Providers disponibles:
 - `blender`: motor local headless dentro del servicio `blender-worker`. Es la opción recomendada para piezas imprimibles, CAD-like y con dimensiones reales en milímetros.
 - `tripo3d`: provider remoto `text_to_model` de Tripo3D. Es útil para modelos visuales u orgánicos. Consume créditos externos y no garantiza precisión CAD para piezas funcionales como roscas, tolerancias o encajes.
 
+Al elegir Tripo3D, el asistente ofrece cuatro presets antes de crear el job:
+
+- `rápido`: menor coste y menor complejidad. Envía `texture=false`, `pbr=false`, `geometry_quality=standard`.
+- `equilibrado`: calidad/coste intermedio. Envía `texture=true`, `pbr=false`, `geometry_quality=standard`, `texture_quality=standard`.
+- `máxima calidad`: más detalle y mayor coste. Envía `texture=true`, `pbr=true`, `geometry_quality=detailed`, `texture_quality=detailed`.
+- `personalizado`: el asistente pregunta los parámetros concretos y envía solo los valores elegidos por el usuario.
+
 El pipeline de Blender usa JSON estructurado seguro en lugar de ejecutar Python generado por IA directamente. Tripo3D usa el prompt textual y descarga el `.glb` resultante a storage local para no depender de URLs firmadas externas que caducan. Los outputs se guardan localmente en `public/generated-3d/`, pero la capa de storage está preparada para crecer hacia MinIO/S3-compatible.
 
 Los artifacts 3D nuevos guardan enlaces relativos como `/generated-3d/<jobId>/model.glb`. Esto evita persistir dominios de entorno como `localhost` y hace que los enlaces funcionen igual en desarrollo, producción y detrás de reverse proxies. Esos archivos se sirven mediante una ruta dinámica de Next.js, no solo como assets estáticos de `public`, para que los modelos creados durante el runtime estén disponibles sin reiniciar `pnpm start`. Los artifacts 3D generados antes de este comportamiento pueden contener URLs absolutas antiguas y se consideran descartables durante el desarrollo.
 
-Para minimizar créditos de Tripo3D, la app envía por defecto `texture=false`, `pbr=false`, `geometry_quality=standard` y `face_limit=3000`. Si quieres texturas, define `TRIPO3D_TEXTURE=true`, asumiendo mayor coste.
+La app no fuerza por código `face_limit`, texturas ni calidades de Tripo3D. Los parámetros enviados quedan guardados en `providerData` junto con la respuesta de Tripo3D para trazabilidad.
 
 > **Nota**: No commitees `.env.local`. Contiene secretos de autenticación y acceso a proveedores.
 
